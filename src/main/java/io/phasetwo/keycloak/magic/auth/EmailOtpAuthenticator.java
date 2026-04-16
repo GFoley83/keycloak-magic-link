@@ -122,7 +122,13 @@ public class EmailOtpAuthenticator extends UsernamePasswordForm {
       return;
     }
 
-    // Check if user is enabled before proceeding
+    // Check if user is enabled before proceeding.
+    // `enabledUser` internally calls `context.getEvent().error(Errors.USER_DISABLED)`
+    // when the user is disabled; `EventBuilder.error()` throws
+    // `IllegalStateException: Attempted to define event error without first setting
+    // the event type` if no event type has been set. Set it now so the disabled-user
+    // code path produces a proper LOGIN_ERROR event instead of an unhandled 500.
+    context.getEvent().user(user).event(EventType.LOGIN);
     if (!enabledUser(context, user)) {
       return;
     }
